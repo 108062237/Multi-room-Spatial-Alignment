@@ -1,0 +1,12 @@
+dataset/
+result/
+Project_result/
+*.png
+lab1/data
+*/__pycache__/
+*.pyc
+lab1/viz_output/
+lab1/perfect_viz/
+lab1/viz_pose_graph_perfect/
+lab1/data/
+lab1/data

@@ -1,0 +1,7 @@
+data/
+viz_output/
+perfect_viz/
+viz_pose_graph_perfect/
+__pycache__/
+*.pyc
+data
