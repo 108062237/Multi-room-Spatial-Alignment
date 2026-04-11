@@ -42,8 +42,8 @@ python src/tool_edit_layout.py \    --image "image.png" \    --layout "layout.tx
 **參數說明：**
 
 - `src` / `dst`: 兩個相鄰房間的 txt 檔名（不需要加路徑，只需給檔名即可）。
-- `idx_src`: 房間 src 的特徵點 ID 陣列（請看 `tool_view_corners.py` 畫出來的數字）。
-- `idx_dst`: 房間 dst 的特徵點 ID 陣列，**長度必須與 idx_src 相同，且順序對應**。
+- `idx_src`: 房間 src 的特徵點 ID 陣列（`tool_view_corners.py` 畫出來的數字）。
+- `idx_dst`: 房間 dst 的特徵點 ID 陣列，長度必須與 idx_src 相同，且順序對應。
 
 ---
 
@@ -52,7 +52,7 @@ python src/tool_edit_layout.py \    --image "image.png" \    --layout "layout.tx
 當你把整層樓的配對關係都寫入 `perfect_matches.json` 之後，請依序執行以下三個步驟來生成最終結果：
 
 ### Step 1: 產生高置信度的邊界約束 (GTSAM Edges)
-這會將你記錄的點陣列轉換成非常小誤差的剛體旋轉與平移約束：
+這會將你記錄的點陣列轉換成小誤差的旋轉與平移約束：
 ```bash
 python src/tool_generate_gtsam_edges.py \
     --matches data/group/58472_Floor1/perfect_matches.json \
@@ -70,8 +70,8 @@ python src/03_optimize_pose_graph_gtsam.py \
     --report data/group/58472_Floor1/perfect_report.json
 ```
 
-### Step 3: 終端完美對齊與渲染 (Perfect Tree Snapping)
-為了解決 GTSAM 無法 100% 關閉的平移誤差，這個腳本會直接把標記的角點吸附貼合 (0 縫隙、0 重疊)，並畫出成品圖：
+### Step 3:對齊與渲染 (Perfect Tree Snapping)
+
 ```bash
 python src/08_perfect_tree_snapping.py \
     --scene_dir data/group/58472_Floor1 \
@@ -79,5 +79,3 @@ python src/08_perfect_tree_snapping.py \
     --matches data/group/58472_Floor1/perfect_matches.json \
     --out viz_output/58472_Floor1_Final.png
 ```
-
-這樣就能在 `viz_output` 目錄下看到完美的最終平面圖啦！ 🎉
