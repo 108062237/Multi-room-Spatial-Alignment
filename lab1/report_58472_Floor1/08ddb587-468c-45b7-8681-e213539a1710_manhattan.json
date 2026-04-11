@@ -1,0 +1,42 @@
+{
+    "corners": [
+        {
+            "id": 1,
+            "x_m": 44.851202246113914,
+            "y_m": 57.618070331121075,
+            "turn_angle_deg": 0.0,
+            "manhattan_error_deg": 0.0
+        },
+        {
+            "id": 2,
+            "x_m": 69.24842669373682,
+            "y_m": 50.408662213982176,
+            "turn_angle_deg": -90.0,
+            "manhattan_error_deg": 0.0
+        },
+        {
+            "id": 3,
+            "x_m": 32.66316893896894,
+            "y_m": -73.39883077497551,
+            "turn_angle_deg": -90.0,
+            "manhattan_error_deg": 0.0
+        },
+        {
+            "id": 4,
+            "x_m": -64.60472245752415,
+            "y_m": -44.656056068109784,
+            "turn_angle_deg": -90.0,
+            "manhattan_error_deg": 0.0
+        },
+        {
+            "id": 5,
+            "x_m": -28.01946470275626,
+            "y_m": 79.1514369208479,
+            "turn_angle_deg": -90.0,
+            "manhattan_error_deg": 0.0
+        }
+    ],
+    "mean_error": 0.0,
+    "max_error": 0.0,
+    "is_manhattan": true
+}

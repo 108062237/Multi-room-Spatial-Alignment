@@ -59,3 +59,89 @@ def intersect_with_z_plane(dir3: Tuple[float, float, float], z_plane: float = -1
     if t <= 0:
         return None
     return (t * dir3[0], t * dir3[1], t * dir3[2])
+
+def align_to_manhattan(xy: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    利用連續向量平均法，自動找出房間的主軸角度，並旋轉至正南正北。
+    回傳 (旋轉對齊後的座標, 旋轉矩陣 R)
+    """
+    if len(xy) < 3:
+        return xy, np.eye(2)
+        
+    shifted_xy = np.roll(xy, -1, axis=0)
+    dx = shifted_xy[:, 0] - xy[:, 0]
+    dy = shifted_xy[:, 1] - xy[:, 1]
+    
+    lengths = np.hypot(dx, dy)
+    angles = np.arctan2(dy, dx)
+    
+    Sx = np.sum(lengths * np.cos(4 * angles))
+    Sy = np.sum(lengths * np.sin(4 * angles))
+    
+    theta_dom = np.arctan2(Sy, Sx) / 4.0
+    
+    cos_t = np.cos(-theta_dom)
+    sin_t = np.sin(-theta_dom)
+    
+    R = np.array([
+        [cos_t, -sin_t],
+        [sin_t,  cos_t]
+    ])
+    
+    # 套用旋轉 R.T
+    return xy @ R.T, R
+
+def rectify_polygon(xy: np.ndarray, rotate_back: bool = True) -> np.ndarray:
+    """
+    強制將偏離些許的角度修正為完全 90 度與 270 度的完美曼哈頓形狀。
+    如果 rotate_back=True，則在修正完長寬比例後轉回原來的朝向。
+    如果為 False，則會直接回傳完美平行於 Global X 與 Y 軸的方形格局！
+    """
+    if len(xy) < 3:
+        return xy
+        
+    xy_aligned, R = align_to_manhattan(xy)
+    N = len(xy_aligned)
+    
+    # 決定各個相鄰邊是水平 H 或垂直 V
+    edge_types = []
+    for i in range(N):
+        p1 = xy_aligned[i]
+        p2 = xy_aligned[(i + 1) % N]
+        if abs(p2[0] - p1[0]) > abs(p2[1] - p1[1]):
+            edge_types.append('H') # y 一致
+        else:
+            edge_types.append('V') # x 一致
+            
+    x_labels = list(range(N))
+    y_labels = list(range(N))
+    
+    def merge(labels, a, b):
+        target = labels[b]
+        source = labels[a]
+        for i in range(N):
+            if labels[i] == source:
+                labels[i] = target
+                
+    for i in range(N):
+        next_i = (i + 1) % N
+        if edge_types[i] == 'H':
+            merge(y_labels, i, next_i)  # 水平線相連的兩個點，Y是相同的
+        else:
+            merge(x_labels, i, next_i)  # 垂直線相連的兩個點，X是相同的
+            
+    rectified = np.copy(xy_aligned)
+    
+    for label in set(x_labels):
+        indices = [i for i, l in enumerate(x_labels) if l == label]
+        rectified[indices, 0] = np.mean(xy_aligned[indices, 0])
+        
+    for label in set(y_labels):
+        indices = [i for i, l in enumerate(y_labels) if l == label]
+        rectified[indices, 1] = np.mean(xy_aligned[indices, 1])
+        
+    # 因為 xy_aligned = xy @ R.T，所以旋轉回去就是乘以 R (因為 R.T @ R = I)
+    if rotate_back:
+        return rectified @ R
+    else:
+        return rectified

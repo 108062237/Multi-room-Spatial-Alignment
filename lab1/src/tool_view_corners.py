@@ -14,6 +14,11 @@ if _LAYOUTHUB.exists():
     sys.path.insert(0, str(_LAYOUTHUB))
 
 try:
+    from utils.geom import rectify_polygon, align_to_manhattan
+except ImportError:
+    pass
+
+try:
     from utils.post_proc import np_coor2xy
     import utils.panorama as pano_utils
 except ImportError:
@@ -65,37 +70,14 @@ def load_layout_txt(txt_path, pano_w=1024, pano_h=512, z=50):
     floor_xy[:, 0] -= center
     floor_xy[:, 1] -= center
     floor_xy[:, 1] = -floor_xy[:, 1]  # Y 軸反轉
-    
+    try:
+        floor_xy = rectify_polygon(floor_xy)
+    except Exception:
+        pass
+        
     return floor_xy
 
-def align_to_manhattan(xy):
-    """
-    利用連續向量平均法，自動找出房間的主軸角度，並旋轉至正南正北。
-    """
-    if len(xy) < 3:
-        return xy
-        
-    shifted_xy = np.roll(xy, -1, axis=0)
-    dx = shifted_xy[:, 0] - xy[:, 0]
-    dy = shifted_xy[:, 1] - xy[:, 1]
-    
-    lengths = np.hypot(dx, dy)
-    angles = np.arctan2(dy, dx)
-    
-    Sx = np.sum(lengths * np.cos(4 * angles))
-    Sy = np.sum(lengths * np.sin(4 * angles))
-    
-    theta_dom = np.arctan2(Sy, Sx) / 4.0
-    
-    cos_t = np.cos(-theta_dom)
-    sin_t = np.sin(-theta_dom)
-    
-    R = np.array([
-        [cos_t, -sin_t],
-        [sin_t,  cos_t]
-    ])
-    
-    return xy @ R.T
+# align_to_manhattan 移至 utils/geom.py
 
 def main():
     args = parse_args()
@@ -114,7 +96,7 @@ def main():
         return
         
     # 3. 🌟 套用曼哈頓對齊魔法
-    floor_xy_aligned = align_to_manhattan(floor_xy)
+    floor_xy_aligned, _ = align_to_manhattan(floor_xy)
     
     # 將多邊形封閉 (頭尾相連) 以便畫圖
     poly_closed = np.vstack([floor_xy_aligned, floor_xy_aligned[0]])

@@ -12,6 +12,11 @@ _LAYOUTHUB = Path(__file__).resolve().parent.parent.parent / 'LayoutHub'
 if _LAYOUTHUB.exists():
     sys.path.insert(0, str(_LAYOUTHUB))
 
+try:
+    from utils.geom import rectify_polygon
+except ImportError:
+    rectify_polygon = None
+
 from utils.post_proc import np_coor2xy
 
 def load_layout_txt(txt_path, pano_w=1024, pano_h=512, z=50):
@@ -42,6 +47,13 @@ def load_layout_txt(txt_path, pano_w=1024, pano_h=512, z=50):
     floor_xy[:, 0] -= center
     floor_xy[:, 1] -= center
     floor_xy[:, 1] = -floor_xy[:, 1]   # Y 翻轉
+    
+    if rectify_polygon is not None:
+        try:
+            floor_xy = rectify_polygon(floor_xy)
+        except Exception:
+            pass
+            
     return floor_xy
 
 def compute_relative_pose(pA_start, pA_end, pB_start, pB_end):
@@ -64,6 +76,8 @@ def main():
     parser.add_argument('--layout_dir', required=True, help='房間 txt 佈局檔所在的資料夾路徑 (例: layout_gt/)')
     parser.add_argument('--out', required=True, help='輸出的 edges JSON 檔案 (例: perfect_gtsam_edges.json)')
     parser.add_argument('--scene_id', required=False, help='場景 ID (不填則從 layout_dir 自動推斷)')
+    parser.add_argument('--sigma_xy', type=float, default=0.005, help="極低的平移誤差標準差 (0.5cm) 作為強力縫合錨點")
+    parser.add_argument('--sigma_theta', type=float, default=0.001, help="極低的旋轉誤差標準差 作為強力縫合錨點")
     args = parser.parse_args()
 
     matches_json_path = args.matches
@@ -100,8 +114,8 @@ def main():
                 "dtheta": dtheta
             },
             "noise_sigma": {
-                "sigma_xy": 0.05,           # 很小 = 高置信度
-                "sigma_theta": 0.017453     # ~1 度
+                "sigma_xy": args.sigma_xy,
+                "sigma_theta": args.sigma_theta
             },
             "meta": {
                 "source": "perfect_manual_match",

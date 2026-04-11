@@ -14,6 +14,11 @@ if _LAYOUTHUB.exists():
     sys.path.insert(0, str(_LAYOUTHUB))
 
 try:
+    from utils.geom import rectify_polygon, align_to_manhattan
+except ImportError:
+    pass
+
+try:
     from utils.post_proc import np_coor2xy
     HAS_UTILS = True
 except ImportError:
@@ -69,23 +74,14 @@ def load_layout_txt(txt_path, pano_w=1024, pano_h=512, z=50):
     floor_xy[:, 0] -= center
     floor_xy[:, 1] -= center
     floor_xy[:, 1] = -floor_xy[:, 1]  # 翻轉 Y，與 verifier 一致
-
+    try:
+        floor_xy = rectify_polygon(floor_xy)
+    except Exception:
+        pass
     return floor_xy
 
 
-def align_to_manhattan(xy):
-    """曼哈頓轉正：利用 4 倍角公式自動對齊正南正北，回傳 (轉正後座標, 旋轉矩陣)"""
-    if len(xy) < 3:
-        return xy, np.eye(2)
-    dx = np.roll(xy, -1, axis=0)[:, 0] - xy[:, 0]
-    dy = np.roll(xy, -1, axis=0)[:, 1] - xy[:, 1]
-    lengths, angles = np.hypot(dx, dy), np.arctan2(dy, dx)
-    Sx = np.sum(lengths * np.cos(4 * angles))
-    Sy = np.sum(lengths * np.sin(4 * angles))
-    theta_dom = np.arctan2(Sy, Sx) / 4.0
-    c, s = np.cos(-theta_dom), np.sin(-theta_dom)
-    R = np.array([[c, -s], [s, c]])
-    return xy @ R.T, R
+# align_to_manhattan is moved to utils/geom.py
 
 # ==========================================
 # 2. 核心變換數學 (SE2 -> 3x3 矩陣)

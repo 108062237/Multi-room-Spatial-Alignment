@@ -14,6 +14,11 @@ if _LAYOUTHUB.exists():
     sys.path.insert(0, str(_LAYOUTHUB))
 
 try:
+    from utils.geom import rectify_polygon, align_to_manhattan
+except ImportError:
+    pass  # We can still run without it if not found there
+
+try:
     from utils.post_proc import np_coor2xy
     HAS_UTILS = True
 except ImportError:
@@ -104,8 +109,13 @@ def get_floor_xy_from_json(json_path, W=1024, H=512):
     center = W / 2 - 0.5
     floor_xy[:, 0] -= center
     floor_xy[:, 1] -= center
-    floor_xy[:, 1] = -floor_xy[:, 1]    # 翻轉 Y
-
+    floor_xy[:, 1] = -floor_xy[:, 1]  # Y 軸反轉
+    
+    try:
+        floor_xy = rectify_polygon(floor_xy)
+    except Exception:
+        pass
+        
     return floor_xy
 
 
@@ -125,17 +135,7 @@ def load_room_geometry(file_path, W=1024, H=512):
 # ==========================================
 # 2. 幾何運算核心 (Math & Geometry)
 # ==========================================
-def align_to_manhattan(xy):
-    """曼哈頓對齊：自動找出房間主軸並轉正，同時回傳旋轉矩陣"""
-    if len(xy) < 3:
-        return xy, np.eye(2)
-    dx = np.roll(xy, -1, axis=0)[:, 0] - xy[:, 0]
-    dy = np.roll(xy, -1, axis=0)[:, 1] - xy[:, 1]
-    lengths, angles = np.hypot(dx, dy), np.arctan2(dy, dx)
-    theta_dom = np.arctan2(np.sum(lengths * np.sin(4 * angles)), np.sum(lengths * np.cos(4 * angles))) / 4.0
-    c, s = np.cos(-theta_dom), np.sin(-theta_dom)
-    R = np.array([[c, -s], [s, c]])
-    return xy @ R.T, R
+# align_to_manhattan has been moved to utils/geom.py
 
 def main():
     parser = argparse.ArgumentParser(description="通用版雙房間精準拼接 (支援 TXT/JSON)")
